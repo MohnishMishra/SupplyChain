@@ -1,27 +1,36 @@
-import pulp 
-problem = pulp.LpProblem("My_Problem", pulp.LpMinimize)
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr 28 09:44:46 2022
 
-# Upper bound has to be added and that depends on the invertory cost and budget
+@author: amlanghosh
+"""
 
-penalty_cost = pulp.LpVariable ('penalty_cost', lowBound=0, cat = 'Continuous') #f
-lost_sales = pulp.LpVariable ('lost_sales', lowBound=0, cat = 'Continuous') #l
-material_flow = pulp.LpVariable ('material_flow', lowBound=0, cat = 'Continuous') #x
-demand_rate = pulp.LpVariable ('demand_rate', lowBound=0, cat = 'Continuous') #d
-ttr_chain = pulp.LpVariable ('ttr', lowBound=0, cat = 'Continuous') #t
-ttr_node = pulp.LpVariable ('ttr_node', lowBound= 0, cat = 'Continuous') #t 
-goods_produced =pulp.LpVariable ('goods_produced', lowBound= 0, cat = 'Continuous') #u
-goods_in_inventory = pulp.LpVariable ('inventory', lowBound= 0, cat = 'Continuous') #r
-unit_inventory_holding_cost = pulp.LpVariable ('unit_inventory_holding_cost', lowBound = 0, cat= 'Continuous') #h
-indicator_matrix = pulp.LpVariable ('indicator', lowBound= 0, cat = 'Continuous') #I
-bom_matrix = pulp.LpVariable ('bom_matrix', lowBound= 0, cat = 'Continuous') #B
-survival_indicator = pulp.LpVariable ('survival_indicator', lowBound= 0, cat = 'Continuous') #v
-production_capacity = pulp.LpVariable ('production', lowBound= 0, cat = 'Continuous') #c
+import pandas as pd
+from pulp import *
+from data_preparation import *
+from model import *
 
-problem += sum(penalty_cost*lost_sales) + sum(unit_inventory_holding_cost * goods_in_inventory) #objective
+data = 'DummyProduct_SupplyChainData.xlsx'
 
-problem += sum(material_flow) + lost_sales >= (demand_rate * ttr_chain)
-problem += sum(material_flow) - goods_produced <= goods_in_inventory
-problem += sum((material_flow * indicator_matrix)/(bom_matrix)) - goods_produced >= 0
-problem += sum(goods_produced) <= (ttr_chain - ttr_node (1 - survival_indicator)) * production_capacity
-            
+df_supplier = pd.read_excel(data, sheet_name = 'Supplier')
+supplier = list(df_supplier['Name'].unique())
 
+dis_demand = []
+
+with pd.ExcelWriter('Disrupted_Output.xlsx') as writer:
+
+    for dis_sup in supplier:
+        
+        factory_product,material,product_factory = data_prep(data,dis_sup)
+        df, d = model(material,factory_product,product_factory)
+        
+        print (str(dis_sup)+' '+str(1 - d))
+        dis_demand.append((1-d)*100)
+        
+        df.to_excel(writer, sheet_name = str(dis_sup), index = False)
+    
+    df = pd.DataFrame({'Supplier': supplier, 'Disrupted Demand Percentage': dis_demand},
+                      columns = ['Supplier','Disrupted Demand Percentage'])
+    
+    df.to_excel(writer, sheet_name = 'Results', index = False)
+    

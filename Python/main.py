@@ -12,6 +12,7 @@ ttr_node = pulp.LpVariable ('ttr_node', lowBound= 0, cat = 'Continuous') #t
 goods_produced =pulp.LpVariable ('goods_produced', lowBound= 0, cat = 'Continuous') #u
 goods_in_inventory = pulp.LpVariable ('inventory', lowBound= 0, cat = 'Continuous') #r
 unit_inventory_holding_cost = pulp.LpVariable ('unit_inventory_holding_cost', lowBound = 0, cat= 'Continuous') #h
+inventory_budget = pulp.LpVariable ('inventory_budget', lowBound = 0, cat = 'Continuous') #br
 indicator_matrix = pulp.LpVariable ('indicator', lowBound= 0, cat = 'Continuous') #I
 bom_matrix = pulp.LpVariable ('bom_matrix', lowBound= 0, cat = 'Continuous') #B
 survival_indicator = pulp.LpVariable ('survival_indicator', lowBound= 0, cat = 'Continuous') #v
@@ -23,5 +24,7 @@ problem += sum(material_flow) + lost_sales >= (demand_rate * ttr_chain)
 problem += sum(material_flow) - goods_produced <= goods_in_inventory
 problem += sum((material_flow * indicator_matrix)/(bom_matrix)) - goods_produced >= 0
 problem += sum(goods_produced) <= (ttr_chain - ttr_node (1 - survival_indicator)) * production_capacity
+problem += sum(unit_inventory_holding_cost * goods_in_inventory) <= inventory_budget 
+
             
 
